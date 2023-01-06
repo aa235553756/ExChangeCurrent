@@ -22,8 +22,11 @@ function App() {
   // !useState
   const [currency, setCurrency] = useState('');
   const [rate, setRate] = useState('');
-  const [wallet, setWallet] = useState(5000)
+  const [wallet, setWallet] = useState(5000);
+  // 輸入台幣
   const [exChange, setExChange] = useState(0);
+  // 台幣轉換暫存
+  const [convert, setConvert] = useState(0)
   const [coinData, setCoinData] = useState({
     日幣: {
       rate: 45.4
@@ -35,56 +38,49 @@ function App() {
       rate: 0.33
     },
   })
-  const [convert, setConvert] = useState(0)
-  // 待-兌換歷史資料
-  const [History, setHistory] = useState([
-    {
-      台幣: 0,
-      兌換幣: {
-        名稱: '兌換幣',
-        值: 100
-      }
-    }
-  ])
+  const [History, setHistory] = useState([])
   // !function declare
+  function InputCurrency(e) {
+    if (e.target.value === '') {
+      setCurrency(e.target.value)
+    } else if (!isNaN(e.target.value)) {
+      return;
+    }
+    setCurrency(e.target.value)
+  }
+  function newCoinData(e) {
+    if (e.target.value === '') {
+      return;
+    }
+    setCoinData((prev) => {
+      return {
+        //這邊建議帶參數,ex: (prev)=> {setSomething{...prev}}
+        ...prev,
+        [currency]: { rate: Number(rate) }
+      }
+    })
+  }
+  function exchangeCurrency(e) {
+    if (isNaN(e.target.value)) {
+      return;
+    }
+    setExChange(Number(e.target.value));
+  }
   // !JSX
   return (
     <>
       <h2>新增幣種</h2>
       <input type="text" value={currency} placeholder="幣種名稱"
-        onChange={(e) => {
-          if (e.target.value === '') {
-            setCurrency(e.target.value)
-          } else if (!isNaN(e.target.value)) {
-            return;
-          }
-          setCurrency(e.target.value)
-        }} />
+        onChange={InputCurrency} />
       <input type="text" value={rate} placeholder="匯率"
         onChange={(e) => { setRate(e.target.value) }} />
       <input type="button" value="新增幣種"
-        onClick={(e) => {
-          if (e.target.value === '') {
-            return;
-          }
-          setCoinData((prev) => {
-            return {
-              //這邊建議帶參數,ex: (prev)=> {setSomething{...prev}}
-              ...prev,
-              [currency]: { rate: Number(rate) }
-            }
-          })
-        }} />
+        onClick={newCoinData} />
       <hr />
       <h2>您錢包還有{wallet}元</h2>
       <span>請輸入您要換的台幣</span>
       <input type="text" value={exChange}
-        onChange={(e) => {
-          if (isNaN(e.target.value)) {
-            return;
-          }
-          setExChange(Number(e.target.value));
-        }} />
+        onChange={exchangeCurrency} />
       <input type="button" value="計算"
         onClick={() => {
           setConvert(exChange)
@@ -93,10 +89,14 @@ function App() {
       <ul>
         {
           Object.keys(coinData).map((item, i) => {
+            const currencyValue = (Math.round(coinData[item].rate * convert)) / 100;
             return (
-              <li key={i}>{item}:{(Math.round(coinData[item].rate * convert)) / 100}
+              <li key={i}>{item}:{currencyValue}
                 <input type="button" value='兌換'
                   onClick={() => {
+                    if (currencyValue === 0) {
+                      return;
+                    }
                     setWallet(wallet - exChange)
                     setHistory([
                       ...History,
@@ -104,7 +104,7 @@ function App() {
                         台幣: convert,
                         兌換幣: {
                           名稱: item,
-                          值: (Math.round(coinData[item].rate * convert)) / 100
+                          值: currencyValue
                         }
                       }
                     ])
